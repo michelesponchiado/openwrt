@@ -53,7 +53,8 @@
         pinctrl {
                 state_default: pinctrl0 {
                         gpio {
-                                ralink,group = "jtag", "rgmii", "mdio", "uartf";
+//                                ralink,group = "jtag", "rgmii", "mdio", "uartf";
+                                ralink,group = "jtag", "rgmii", "mdio"; // removed uartf from the gpio map
                                 ralink,function = "gpio";
                         };
                 };

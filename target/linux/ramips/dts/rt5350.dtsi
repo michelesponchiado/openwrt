@@ -77,24 +77,6 @@
 			interrupts = <3>;
 		};
 
-		uart@500 {
-			compatible = "ralink,rt5350-uart", "ralink,rt2880-uart", "ns16550a";
-			reg = <0x500 0x100>;
-
-			resets = <&rstctrl 12>;
-			reset-names = "uart";
-
-			interrupt-parent = <&intc>;
-			interrupts = <5>;
-
-			reg-shift = <2>;
-
-			pinctrl-names = "default";
-			pinctrl-0 = <&uartf_pins>;
-
-			status = "disabled";
-		};
-
 		gpio0: gpio@600 {
 			compatible = "ralink,rt5350-gpio", "ralink,rt2880-gpio";
 			reg = <0x600 0x34>;
@@ -113,6 +95,7 @@
 			ralink,register-map = [ 00 04 08 0c
 						20 24 28 2c
 						30 34 ];
+			status = "okay"; // era : DISABLED, ABILITATO PER PILOTARE RESET E BOOT ENABLE MODULO RADIO
 		};
 
 		gpio1: gpio@660 {
@@ -182,6 +165,26 @@
 			reg-shift = <2>;
 		};
 
+
+		uart@500 {
+			compatible = "ralink,rt5350-uart", "ralink,rt2880-uart", "ns16550a";
+			reg = <0x500 0x100>;
+
+			resets = <&rstctrl 12>;
+			reset-names = "uart";
+
+			interrupt-parent = <&intc>;
+			interrupts = <5>;
+
+			reg-shift = <2>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&uartf_pins>;
+
+			status = "okay";
+		};
+
+
 		systick@d00 {
 			compatible = "ralink,rt5350-systick", "ralink,cevt-systick";
 			reg = <0xd00 0x10>;
@@ -227,7 +230,12 @@
 		uartf_pins: uartf {
 			uartf {
 				ralink,group = "uartf";
-				ralink,function = "uartf";
+				ralink,function = "gpio uartf";// impostato RIN DSR DCD DTR come GPIO14.11 e RXD CTS TXD RTS come uart pins
+// vedi tabella 1-5 del datasheet del micro e https://www.olimex.com/forum/index.php?topic=4586.0
+// la descrizione dei pin mux la si trova in /home/michele/Downloads/ASAC/OLinuXino/openwrt/build_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/linux-ramips_rt305x/linux-3.18.19/arch/mips/ralink/rt305x.c
+// GPIO#12 = DCD-->RESETn
+// GPIO#0 = BOOT_ENABLE
+// era 				ralink,function = "uartf";
 			};
 		};
 		spi_cs1: spi1 {
