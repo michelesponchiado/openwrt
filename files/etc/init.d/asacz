@@ -1,0 +1,30 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2011 OpenWrt.org
+
+START=50
+STOP=50
+
+
+start() {
+	logger "Starting ASACZ server"
+	/usr/OLinuxino_RF_data_send_receive &
+}
+
+stop() {
+	local pid
+	local pids
+	local pid_mine
+	logger "Stopping ASACZ server"
+
+	stop
+
+	# kill active ASACZ servers
+	pid_mine="$$"
+	pids="$(pidof OLinuxino_RF_data_send_receive)"
+	for pid in $pids; do
+		logger "Stopping ASACZ server with pid $pid"
+		[ "$pid" = "$pid_mine" ] && continue
+		[ -e "/proc/$pid/stat" ] && kill $pid
+	done
+}
+
