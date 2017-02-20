@@ -1,0 +1,215 @@
+config defaults
+option syn_flood1
+option inputACCEPT
+option outputACCEPT
+option forwardREJECT
+# Uncomment this line to disable ipv6 rules
+#option disable_ipv61
+
+config zone
+option namelan
+list   network'lan'
+option inputACCEPT
+option outputACCEPT
+option forwardACCEPT
+
+config zone
+option namewan
+list   network'wan'
+list   network'wan6'
+option inputREJECT
+option outputACCEPT
+option forwardREJECT
+option masq1
+option mtu_fix1
+
+config forwarding
+option srclan
+option destwan
+
+# We need to accept udp packets on port 68,
+# see https://dev.openwrt.org/ticket/4108
+config rule
+option nameAllow-DHCP-Renew
+option srcwan
+option protoudp
+option dest_port68
+option targetACCEPT
+option familyipv4
+
+# Allow IPv4 ping
+config rule
+option nameAllow-Ping
+option srcwan
+option protoicmp
+option icmp_typeecho-request
+option familyipv4
+option targetACCEPT
+
+config rule
+option nameAllow-IGMP
+option srcwan
+option protoigmp
+option familyipv4
+option targetACCEPT
+
+# Allow DHCPv6 replies
+# see https://dev.openwrt.org/ticket/10381
+config rule
+option nameAllow-DHCPv6
+option srcwan
+option protoudp
+option src_ipfe80::/10
+option src_port547
+option dest_ipfe80::/10
+option dest_port546
+option familyipv6
+option targetACCEPT
+
+config rule
+option nameAllow-MLD
+option srcwan
+option protoicmp
+option src_ipfe80::/10
+list icmp_type'130/0'
+list icmp_type'131/0'
+list icmp_type'132/0'
+list icmp_type'143/0'
+option familyipv6
+option targetACCEPT
+
+# Allow essential incoming IPv6 ICMP traffic
+config rule
+option nameAllow-ICMPv6-Input
+option srcwan
+option protoicmp
+list icmp_typeecho-request
+list icmp_typeecho-reply
+list icmp_typedestination-unreachable
+list icmp_typepacket-too-big
+list icmp_typetime-exceeded
+list icmp_typebad-header
+list icmp_typeunknown-header-type
+list icmp_typerouter-solicitation
+list icmp_typeneighbour-solicitation
+list icmp_typerouter-advertisement
+list icmp_typeneighbour-advertisement
+option limit1000/sec
+option familyipv6
+option targetACCEPT
+
+# Allow essential forwarded IPv6 ICMP traffic
+config rule
+option nameAllow-ICMPv6-Forward
+option srcwan
+option dest*
+option protoicmp
+list icmp_typeecho-request
+list icmp_typeecho-reply
+list icmp_typedestination-unreachable
+list icmp_typepacket-too-big
+list icmp_typetime-exceeded
+list icmp_typebad-header
+list icmp_typeunknown-header-type
+option limit1000/sec
+option familyipv6
+option targetACCEPT
+
+# include a file with users custom iptables rules
+config include
+option path /etc/firewall.user
+
+
+### EXAMPLE CONFIG SECTIONS
+# do not allow a specific ip to access wan
+#config rule
+#option srclan
+#option src_ip192.168.45.2
+#option destwan
+#option prototcp
+#option targetREJECT
+
+# block a specific mac on wan
+#config rule
+#option destwan
+#option src_mac00:11:22:33:44:66
+#option targetREJECT
+
+# block incoming ICMP traffic on a zone
+#config rule
+#option srclan
+#option protoICMP
+#option targetDROP
+
+# port redirect port coming in on wan to lan
+#config redirect
+#option srcwan
+#option src_dport80
+#option destlan
+#option dest_ip192.168.16.235
+#option dest_port80
+#option prototcp
+
+# port redirect of remapped ssh port (22001) on wan
+#config redirect
+#option srcwan
+#option src_dport22001
+#option destlan
+#option dest_port22
+#option prototcp
+
+# allow IPsec/ESP and ISAKMP passthrough
+config rule
+option srcwan
+option destlan
+option protoesp
+option targetACCEPT
+
+config rule
+option srcwan
+option destlan
+option dest_port500
+option protoudp
+option targetACCEPT
+
+### FULL CONFIG SECTIONS
+#config rule
+#option srclan
+#option src_ip192.168.45.2
+#option src_mac00:11:22:33:44:55
+#option src_port80
+#option destwan
+#option dest_ip194.25.2.129
+#option dest_port120
+#option prototcp
+#option targetREJECT
+
+#config redirect
+#option srclan
+#option src_ip192.168.45.2
+#option src_mac00:11:22:33:44:55
+#option src_port1024
+#option src_dport80
+#option dest_ip194.25.2.129
+#option dest_port120
+#option prototcp
+
+config zone
+        option name       wifi
+        list   network    'wifi'
+        option input      ACCEPT
+        option output     ACCEPT
+        option forward    REJECT 
+
+config 'forwarding'
+        option 'src'        'wifi'
+        option 'dest'       'wan' 
+
+config 'forwarding'
+        option 'src'        'lan'
+        option 'dest'       'wifi' 
+
+config 'forwarding'
+        option 'src'        'wifi'
+        option 'dest'       'lan' 
+

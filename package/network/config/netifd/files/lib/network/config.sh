@@ -70,6 +70,22 @@ setup_interface() {
 
 	[ -n "$config" ] || return 0
 	ubus call network.interface."$config" add_device "{ \"name\": \"$iface\" }"
+
+	local iftype
+	config_get iftype "$config" type 
+	        case "$iftype" in 
+	                bridge) 
+				local macaddr 
+ 	                        config_get macaddr "$config" macaddr 
+				ifconfig eth0 down
+				ifconfig eth0 hw ether "${macaddr}"
+				ifconfig eth0 up
+				ifconfig eth0.1 down
+				ifconfig eth0.1 hw ether "${macaddr}"
+				ifconfig eth0.1 up
+                	;; 
+		esac
+
 }
 
 do_sysctl() {
