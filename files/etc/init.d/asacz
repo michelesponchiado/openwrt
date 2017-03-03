@@ -7,6 +7,9 @@ STOP=50
 
 start() {
 	logger "Starting ASACZ server"
+	mkdir /tmp/tftp
+	kill inetd
+	inetd
 
 #setting the MAC address for eth0 and eth0.1 as for the lan 
 	config_load network
@@ -31,7 +34,6 @@ stop() {
 	logger "Stopping ASACZ server"
 
 	stop
-
 	# kill active ASACZ servers
 	pid_mine="$$"
 	pids="$(pidof ASACZ)"
