@@ -1,12 +1,18 @@
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2006-2011 OpenWrt.org
 
+
+EXTRA_COMMANDS="backup restore"
+EXTRA_HELP=<<EOF
+	backup  saves a copy of the service
+    restore restores a saved a copy of the service
+EOF
+
 START=50
 STOP=50
 
 
 start() {
-	logger "Starting ASACZ server"
 	mkdir /tmp/tftp
 	kill inetd
 	inetd
@@ -22,9 +28,40 @@ start() {
 	ifconfig eth0.1 down
 	ifconfig eth0.1 hw ether "${macaddr}"
 	ifconfig eth0.1 up
-	logger "done"
-
-	/usr/ASACZ &
+	
+	#se esiste ASACZ_previous ma non esiste ASACZ, ASACZ_previous –> ASACZ
+	if [ -e "/usr/ASACZ_previous" ] 
+	then
+		if [ -e "/usr/ASACZ" ] 
+		then
+			logger "ASACZ already exists, no need to look for previous"
+		else
+			logger "copying ASACZ previous to ASACZ"
+			cp /usr/ASACZ_previous /usr/ASACZ
+		fi
+	fi
+	
+	sleep 1
+	# if ASACZ server already running, avoid to start it
+	pid_mine="$$"
+	pids="$(pidof ASACZ)"
+	counterASACZ = 0
+	for pid in $pids; do
+		[ "$pid" = "$pid_mine" ] && continue
+		if [ -e "/proc/$pid/stat" ] 
+		then
+			counterASACZ=$(( $counterASACZ + 1 ))
+			logger "ASACZ server already running with pid $pid"
+		fi
+	done
+	if [ $counterASACZ -gt 0 ]
+	then
+		logger "No need to start ASACZ server, was already running"
+	else
+		logger "Starting ASACZ server"
+		/usr/ASACZ &
+	fi
+	
 }
 
 stop() {
@@ -42,5 +79,52 @@ stop() {
 		[ "$pid" = "$pid_mine" ] && continue
 		[ -e "/proc/$pid/stat" ] && kill $pid
 	done
+	
+	# wait for previous ASACZ servers stopping, with an overall timeout of 30 seconds
+	counter = 0
+	for pid in $pids; do
+		[ "$pid" = "$pid_mine" ] && continue
+		while [ -e "/proc/$pid/stat" ]
+		do
+			sleep 1
+			counter=$(( $counter + 1 ))
+			if [ $counter -gt 30 ]
+			then
+				logger "ERROR: timeout waiting for ASACZ server with pid $pid, cnt = $counter"
+				break
+			fi
+			if [ $counter -gt 1 ]
+			then
+				logger "Waiting for ASACZ server with pid $pid, cnt = $counter"
+			fi
+		done
+		if [ -e "/proc/$pid/stat" ]
+		then
+			logger "ERROR: Unable to stop ASACZ server with pid $pid"
+		else
+			logger "OK: ASACZ server with pid $pid stopped OK"
+		fi
+	done
 }
 
+restart() {
+	stop "$@"
+	sleep 3
+	start "$@"
+}
+
+backup() {
+	if [ -e "/usr/ASACZ" ] 
+	then
+		logger "backup ASACZ to ASACZ previous"
+		cp /usr/ASACZ /usr/ASACZ_previous
+	fi
+}
+
+restore() {
+	if [ -e "/usr/ASACZ_previous" ] 
+	then
+		logger "restore ASACZ from ASACZ previous"
+		cp /usr/ASACZ_previous /usr/ASACZ
+	fi
+}
